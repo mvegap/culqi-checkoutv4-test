@@ -20,7 +20,7 @@ export default function ModeToggle() {
       </div>
 
       <label className="inline-flex cursor-pointer items-center gap-2">
-        <span className="text-xs text-gray-600">Test</span>
+        <span className="text-xs text-gray-600">Sandbox</span>
         <span className="relative inline-block">
           <input
             type="checkbox"
