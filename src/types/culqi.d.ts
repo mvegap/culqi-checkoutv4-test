@@ -13,6 +13,13 @@ declare global {
     [key: string]: unknown;
   }
 
+  interface CulqiOrder {
+    id: string;
+    state?: string;
+    payment_code?: string; // CIP de PagoEfectivo
+    [key: string]: unknown;
+  }
+
   interface CulqiGlobal {
     publicKey: string;
     settings(opts: Record<string, unknown>): void;
@@ -20,6 +27,7 @@ declare global {
     open(): void;
     close(): void;
     token?: CulqiToken;
+    order?: CulqiOrder;
     error?: CulqiError;
   }
 

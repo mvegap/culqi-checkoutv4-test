@@ -9,6 +9,7 @@ type Status =
   | { kind: "idle" }
   | { kind: "loading"; message: string }
   | { kind: "success"; chargeId: string }
+  | { kind: "order"; orderId: string; paymentCode?: string }
   | { kind: "error"; message: string };
 
 interface Props {
@@ -43,6 +44,9 @@ export default function CulqiCheckout({ product }: Props) {
   const { active, mode } = useKeys();
   const [scriptReady, setScriptReady] = useState(false);
   const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
   const [status, setStatus] = useState<Status>({ kind: "idle" });
 
   const emailRef = useRef("");
@@ -68,11 +72,12 @@ export default function CulqiCheckout({ product }: Props) {
     };
   }, []);
 
-  // Callback global culqi() — Culqi.js lo invoca con el token o error
+  // Callback global culqi() — Culqi.js lo invoca con el token, la orden o un error
   useEffect(() => {
     window.culqi = async () => {
       if (typeof Culqi === "undefined") return;
 
+      // Pago inmediato (tarjeta / Yape): se genera un token y cobramos
       if (Culqi.token) {
         const tokenId = Culqi.token.id;
         const pair = activeRef.current;
@@ -118,7 +123,20 @@ export default function CulqiCheckout({ product }: Props) {
               err instanceof Error ? err.message : "Error de red inesperado.",
           });
         }
-      } else if (Culqi.error) {
+        return;
+      }
+
+      // Pago diferido (PagoEfectivo / agente / banca móvil): se confirma la orden
+      if (Culqi.order) {
+        setStatus({
+          kind: "order",
+          orderId: Culqi.order.id,
+          paymentCode: Culqi.order.payment_code,
+        });
+        return;
+      }
+
+      if (Culqi.error) {
         setStatus({
           kind: "error",
           message:
@@ -142,14 +160,18 @@ export default function CulqiCheckout({ product }: Props) {
       });
       return;
     }
-    if (!email) {
-      setStatus({ kind: "error", message: "Ingresa un email." });
-      return;
-    }
-    if (!product.priceCents || product.priceCents < 100) {
+    if (!email || !firstName || !lastName || !phone) {
       setStatus({
         kind: "error",
-        message: "El monto mínimo es S/ 1.00 (100 céntimos).",
+        message: "Completa nombre, apellido, email y teléfono.",
+      });
+      return;
+    }
+    if (!product.priceCents || product.priceCents < 300) {
+      setStatus({
+        kind: "error",
+        message:
+          "El monto mínimo es S/ 3.00 (necesario para habilitar PagoEfectivo).",
       });
       return;
     }
@@ -167,6 +189,46 @@ export default function CulqiCheckout({ product }: Props) {
       setScriptReady(true);
     }
 
+    // Creamos la orden de pago: habilita PagoEfectivo, agente y banca móvil
+    setStatus({ kind: "loading", message: "Creando orden de pago..." });
+    let orderId: string;
+    try {
+      const res = await fetch("/api/order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: product.priceCents,
+          description: product.title,
+          firstName,
+          lastName,
+          email,
+          phoneNumber: phone,
+          secretKey: active.secretKey,
+          mode,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setStatus({
+          kind: "error",
+          message:
+            data?.error?.user_message ||
+            data?.error?.merchant_message ||
+            data?.message ||
+            "No se pudo crear la orden de pago.",
+        });
+        return;
+      }
+      orderId = data.id;
+    } catch (err) {
+      setStatus({
+        kind: "error",
+        message:
+          err instanceof Error ? err.message : "Error de red inesperado.",
+      });
+      return;
+    }
+
     setStatus({ kind: "idle" });
 
     Culqi.publicKey = active.publicKey;
@@ -174,6 +236,7 @@ export default function CulqiCheckout({ product }: Props) {
       title: MERCHANT_NAME,
       currency: "PEN",
       amount: product.priceCents,
+      order: orderId,
     });
     Culqi.options({
       lang: "auto",
@@ -217,6 +280,31 @@ export default function CulqiCheckout({ product }: Props) {
         onLoad={() => setScriptReady(true)}
       />
 
+      <div className="grid grid-cols-2 gap-3">
+        <label className="block text-sm font-medium">
+          Nombre
+          <input
+            type="text"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            placeholder="Juan"
+            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-culqi-primary focus:outline-none"
+            disabled={busy}
+          />
+        </label>
+        <label className="block text-sm font-medium">
+          Apellido
+          <input
+            type="text"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder="Pérez"
+            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-culqi-primary focus:outline-none"
+            disabled={busy}
+          />
+        </label>
+      </div>
+
       <label className="block text-sm font-medium">
         Email del comprador
         <input
@@ -224,6 +312,18 @@ export default function CulqiCheckout({ product }: Props) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="cliente@ejemplo.com"
+          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-culqi-primary focus:outline-none"
+          disabled={busy}
+        />
+      </label>
+
+      <label className="block text-sm font-medium">
+        Teléfono
+        <input
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="999999999"
           className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-culqi-primary focus:outline-none"
           disabled={busy}
         />
@@ -242,6 +342,19 @@ export default function CulqiCheckout({ product }: Props) {
         <div className="rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-800">
           ✅ Cargo aprobado. ID:{" "}
           <code className="font-mono">{status.chargeId}</code>
+        </div>
+      )}
+      {status.kind === "order" && (
+        <div className="rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-800">
+          ✅ Orden generada. El comprador recibirá las instrucciones de pago por
+          email. ID: <code className="font-mono">{status.orderId}</code>
+          {status.paymentCode && (
+            <>
+              {" "}
+              · Código CIP:{" "}
+              <code className="font-mono">{status.paymentCode}</code>
+            </>
+          )}
         </div>
       )}
       {status.kind === "error" && (
