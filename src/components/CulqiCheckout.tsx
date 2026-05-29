@@ -352,10 +352,16 @@ export default function CulqiCheckout({ product }: Props) {
         type="button"
         onClick={openCheckout}
         disabled={busy || !scriptReady || !active}
-        className={`w-full rounded-md px-4 py-3 text-sm font-semibold text-white transition disabled:opacity-50 ${buttonColor}`}
+        className={`flex w-full items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white transition disabled:opacity-50 ${buttonColor}`}
       >
+        <LockIcon className="h-4 w-4" />
         {buttonLabel}
       </button>
+
+      <p className="flex items-center justify-center gap-1.5 text-xs text-slate-500">
+        <ShieldIcon className="h-4 w-4 text-emerald-600" />
+        Pago seguro protegido por Culqi · Verificado con 3D Secure
+      </p>
 
       {status.kind === "success" && (
         <div className="rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-800">
@@ -387,5 +393,41 @@ export default function CulqiCheckout({ product }: Props) {
         </div>
       )}
     </div>
+  );
+}
+
+function LockIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
+function ShieldIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
   );
 }
