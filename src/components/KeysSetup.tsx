@@ -47,7 +47,7 @@ export default function KeysSetup({ onDone }: Props) {
       className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
     >
       <header>
-        <h2 className="text-xl font-semibold">Configura tus llaves Culqi</h2>
+        <h2 className="text-xl font-semibold">Configura tu comercio</h2>
         <p className="mt-1 text-sm text-gray-600">
           Las llaves se guardan en <code>localStorage</code> de este navegador.
           No se envían a ningún servidor externo (solo a Culqi al cobrar).

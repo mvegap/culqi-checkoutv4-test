@@ -6,6 +6,7 @@ import KeysSetup from "@/components/KeysSetup";
 import ModeToggle from "@/components/ModeToggle";
 import Credits from "@/components/Credits";
 import { useKeys } from "@/components/KeysProvider";
+import { MERCHANT_NAME } from "@/lib/keys";
 
 const PRODUCT_BASE = {
   title: "Polo Culqi Edición Limitada",
@@ -40,7 +41,7 @@ export default function Home() {
           <p className="text-xs font-semibold uppercase tracking-widest text-culqi-primary/60">
             Culqi · Tienda de prueba
           </p>
-          <h1 className="mt-2 text-3xl font-bold">Merchant Market Test</h1>
+          <h1 className="mt-2 text-3xl font-bold">{MERCHANT_NAME}</h1>
           <p className="mt-2 text-sm text-gray-600">
             Pequeña tienda demo para validar pagos reales con tu integración Culqi.
           </p>

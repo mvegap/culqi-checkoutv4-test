@@ -14,6 +14,8 @@ export const EMPTY_KEYS: CulqiKeys = {
   skLive: "",
 };
 
+export const MERCHANT_NAME = "Tienda - GC";
+
 const STORAGE_KEY = "culqi-merchant-keys-v1";
 const MODE_KEY = "culqi-merchant-mode-v1";
 

@@ -3,6 +3,7 @@
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 import { useKeys } from "./KeysProvider";
+import { MERCHANT_NAME } from "@/lib/keys";
 
 type Status =
   | { kind: "idle" }
@@ -170,7 +171,7 @@ export default function CulqiCheckout({ product }: Props) {
 
     Culqi.publicKey = active.publicKey;
     Culqi.settings({
-      title: "Culqi Test Store",
+      title: MERCHANT_NAME,
       currency: "PEN",
       amount: product.priceCents,
     });
@@ -180,10 +181,10 @@ export default function CulqiCheckout({ product }: Props) {
       paymentMethods: {
         tarjeta: true,
         yape: true,
-        bancaMovil: false,
-        agente: false,
-        billetera: false,
-        cuotealo: false,
+        bancaMovil: true,
+        agente: true,
+        billetera: true,
+        cuotealo: true,
       },
       style: {
         logo: "",
