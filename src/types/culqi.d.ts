@@ -20,21 +20,25 @@ declare global {
     [key: string]: unknown;
   }
 
-  interface CulqiGlobal {
-    publicKey: string;
-    settings(opts: Record<string, unknown>): void;
-    options(opts: Record<string, unknown>): void;
+  interface CulqiCheckoutConfig {
+    settings: Record<string, unknown>;
+    client?: Record<string, unknown>;
+    options?: Record<string, unknown>;
+    appearance?: Record<string, unknown>;
+  }
+
+  // Checkout Custom: se instancia con `new CulqiCheckout(publicKey, config)`
+  class CulqiCheckout {
+    constructor(publicKey: string, config: CulqiCheckoutConfig);
     open(): void;
     close(): void;
     token?: CulqiToken;
     order?: CulqiOrder;
     error?: CulqiError;
+    culqi?: () => void;
   }
 
-  // eslint-disable-next-line no-var
-  var Culqi: CulqiGlobal;
-
   interface Window {
-    culqi?: () => void;
+    CulqiCheckout?: typeof CulqiCheckout;
   }
 }

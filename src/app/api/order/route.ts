@@ -75,7 +75,9 @@ export async function POST(req: Request) {
       email,
       phone_number: phoneNumber,
     },
-    expiration_date: Math.floor(Date.now() / 1000) + EXPIRATION_SECONDS,
+    expiration_date: String(
+      Math.floor(Date.now() / 1000) + EXPIRATION_SECONDS
+    ),
     confirm: false,
   };
 

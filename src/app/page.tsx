@@ -9,9 +9,9 @@ import { useKeys } from "@/components/KeysProvider";
 import { MERCHANT_NAME } from "@/lib/keys";
 
 const PRODUCT_BASE = {
-  title: "Polo Culqi Edición Limitada",
+  title: "Polo Edición Limitada",
   description:
-    "Producto demo para validar la integración con Culqi. El cargo se realiza con tarjeta o Yape vía Culqi Checkout v4.",
+    "Producto de demostración para validar pagos con Culqi: tarjeta, Yape, billeteras y PagoEfectivo.",
 };
 
 const DEFAULT_AMOUNT_SOLES = "15.00";
@@ -26,7 +26,7 @@ export default function Home() {
 
   if (!hydrated) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-12 text-sm text-gray-500">
+      <main className="mx-auto max-w-3xl px-6 py-12 text-sm text-slate-500">
         Cargando...
       </main>
     );
@@ -36,22 +36,24 @@ export default function Home() {
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
-      <header className="mb-8 flex items-start justify-between">
+      <header className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-culqi-primary/60">
-            Culqi · Tienda de prueba
+          <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">
+            {MERCHANT_NAME}
           </p>
-          <h1 className="mt-2 text-3xl font-bold">{MERCHANT_NAME}</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Pequeña tienda demo para validar pagos reales con tu integración Culqi.
+          <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
+            Finalizar compra
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Revisa tu pedido y completa el pago de forma segura.
           </p>
         </div>
 
         {hasTest && !editing && (
-          <div className="flex flex-col items-end gap-2">
+          <div className="flex flex-col items-end gap-1 text-xs">
             <button
               onClick={() => setEditing(true)}
-              className="text-xs text-culqi-primary underline hover:opacity-80"
+              className="font-medium text-slate-500 hover:text-slate-800"
             >
               Editar llaves
             </button>
@@ -59,7 +61,7 @@ export default function Home() {
               onClick={() => {
                 if (confirm("¿Borrar todas las llaves guardadas?")) clear();
               }}
-              className="text-xs text-red-600 underline hover:opacity-80"
+              className="font-medium text-slate-400 hover:text-red-600"
             >
               Borrar llaves
             </button>
@@ -75,44 +77,71 @@ export default function Home() {
             <ModeToggle />
           </div>
 
-          <section className="grid grid-cols-1 gap-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:grid-cols-2">
-            <div className="flex aspect-square items-center justify-center rounded-xl bg-gradient-to-br from-culqi-primary to-culqi-accent text-white">
-              <span className="text-6xl font-bold">C</span>
-            </div>
-
-            <div className="flex flex-col">
-              <h2 className="text-xl font-semibold">{product.title}</h2>
-              <p className="mt-2 text-sm text-gray-600">{product.description}</p>
-
-              <label className="mt-4 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Monto a cobrar (S/)
-                <div className="mt-1 flex items-center gap-2">
-                  <span className="text-2xl font-bold text-culqi-primary">S/</span>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min="1"
-                    step="0.10"
-                    value={amountSoles}
-                    onChange={(e) => setAmountSoles(e.target.value)}
-                    onBlur={() => {
-                      const n = parseFloat(amountSoles);
-                      if (!isNaN(n) && n > 0) setAmountSoles(n.toFixed(2));
-                    }}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-2xl font-bold focus:border-culqi-primary focus:outline-none"
-                  />
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            <div className="flex flex-col gap-6">
+              <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-5">
+                <div>
+                  <span className="inline-block rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
+                    Edición limitada
+                  </span>
+                  <h2 className="mt-2 text-lg font-semibold text-slate-900">
+                    {product.title}
+                  </h2>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-500">
+                    {product.description}
+                  </p>
                 </div>
-                <p className="mt-1 text-[11px] font-normal normal-case tracking-normal text-gray-500">
-                  {priceCents > 0
-                    ? `Se enviará ${priceCents} céntimos a Culqi.`
-                    : "Ingresa un monto válido."}
-                </p>
-              </label>
+                <span className="shrink-0 text-base font-semibold text-slate-900">
+                  S/ {amountSoles}
+                </span>
+              </div>
 
-              <div className="mt-6 flex-1">
+              <div>
+                  <label
+                    htmlFor="amount"
+                    className="block text-sm font-medium text-slate-700"
+                  >
+                    Monto a cobrar
+                  </label>
+                  <div className="mt-1.5 flex items-center rounded-lg border border-slate-300 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+                    <span className="pl-3 text-sm font-medium text-slate-400">
+                      S/
+                    </span>
+                    <input
+                      id="amount"
+                      type="number"
+                      inputMode="decimal"
+                      min="3"
+                      step="0.10"
+                      value={amountSoles}
+                      onChange={(e) => setAmountSoles(e.target.value)}
+                      onBlur={() => {
+                        const n = parseFloat(amountSoles);
+                        if (!isNaN(n) && n > 0) setAmountSoles(n.toFixed(2));
+                      }}
+                      className="w-full rounded-lg border-0 bg-transparent px-2 py-2.5 text-lg font-semibold text-slate-900 focus:outline-none focus:ring-0"
+                    />
+                  </div>
+                  <p className="mt-1.5 text-xs text-slate-400">
+                    {priceCents > 0
+                      ? `Equivale a ${priceCents} céntimos. Mínimo S/ 3.00.`
+                      : "Ingresa un monto válido."}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-slate-50 p-4 text-sm">
+                  <div className="flex justify-between text-slate-500">
+                    <span>Subtotal</span>
+                    <span>S/ {amountSoles}</span>
+                  </div>
+                  <div className="mt-2 flex justify-between border-t border-slate-200 pt-2 text-base font-semibold text-slate-900">
+                    <span>Total</span>
+                    <span>S/ {amountSoles}</span>
+                  </div>
+                </div>
+
                 <CulqiCheckout product={product} />
               </div>
-            </div>
           </section>
         </>
       )}

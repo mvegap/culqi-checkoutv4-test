@@ -16,6 +16,9 @@ export const EMPTY_KEYS: CulqiKeys = {
 
 export const MERCHANT_NAME = "Tienda - GC";
 
+export const MERCHANT_LOGO =
+  "https://cms-assets.tutsplus.com/cdn-cgi/image/width=1700/uploads/users/158/posts/40660/final_image/AlienLogo0.jpg";
+
 const STORAGE_KEY = "culqi-merchant-keys-v1";
 const MODE_KEY = "culqi-merchant-mode-v1";
 
