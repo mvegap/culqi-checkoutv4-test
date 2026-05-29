@@ -3,7 +3,7 @@ import "./globals.css";
 import { KeysProvider } from "@/components/KeysProvider";
 
 export const metadata: Metadata = {
-  title: "Culqi Test Store",
+  title: "Culqi | Custom Checkout Demo",
   description: "Tienda de prueba para validar la integración con Culqi",
   icons: {
     shortcut: "https://culqi.com/assets/images/brand/p-os-brand.svg",
