@@ -5,6 +5,9 @@ import { KeysProvider } from "@/components/KeysProvider";
 export const metadata: Metadata = {
   title: "Culqi Test Store",
   description: "Tienda de prueba para validar la integración con Culqi",
+  icons: {
+    shortcut: "https://culqi.com/assets/images/brand/p-os-brand.svg",
+  },
 };
 
 export default function RootLayout({
