@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import CulqiCheckout from "@/components/CulqiCheckout";
+import CulqiCheckout, {
+  type Currency,
+  CURRENCY_SYMBOL,
+  MIN_AMOUNT_CENTS,
+} from "@/components/CulqiCheckout";
 import KeysSetup from "@/components/KeysSetup";
 import ModeToggle from "@/components/ModeToggle";
 import Credits from "@/components/Credits";
@@ -14,15 +18,29 @@ const PRODUCT_BASE = {
     "Producto de demostración para validar pagos con Culqi: tarjeta, Yape, billeteras y PagoEfectivo.",
 };
 
-const DEFAULT_AMOUNT_SOLES = "15.00";
+const DEFAULT_AMOUNT_BY_CURRENCY: Record<Currency, string> = {
+  PEN: "15.00",
+  USD: "10.00",
+};
 
 export default function Home() {
   const { hydrated, hasTest, clear } = useKeys();
   const [editing, setEditing] = useState(false);
-  const [amountSoles, setAmountSoles] = useState(DEFAULT_AMOUNT_SOLES);
+  const [currency, setCurrency] = useState<Currency>("PEN");
+  const [amountValue, setAmountValue] = useState(
+    DEFAULT_AMOUNT_BY_CURRENCY.PEN
+  );
 
-  const priceCents = solesToCents(amountSoles);
-  const product = { ...PRODUCT_BASE, priceCents };
+  const priceCents = amountToCents(amountValue);
+  const product = { ...PRODUCT_BASE, priceCents, currency };
+  const symbol = CURRENCY_SYMBOL[currency];
+  const minAmount = MIN_AMOUNT_CENTS[currency] / 100;
+
+  const handleCurrencyChange = (next: Currency) => {
+    if (next === currency) return;
+    setCurrency(next);
+    setAmountValue(DEFAULT_AMOUNT_BY_CURRENCY[next]);
+  };
 
   if (!hydrated) {
     return (
@@ -92,9 +110,31 @@ export default function Home() {
                   </p>
                 </div>
                 <span className="shrink-0 text-base font-semibold text-slate-900">
-                  S/ {amountSoles}
+                  {symbol} {amountValue}
                 </span>
               </div>
+
+              <div>
+                  <span className="block text-sm font-medium text-slate-700">
+                    Moneda
+                  </span>
+                  <div className="mt-1.5 inline-flex rounded-lg border border-slate-300 p-1">
+                    {(["PEN", "USD"] as Currency[]).map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => handleCurrencyChange(c)}
+                        className={`rounded-md px-4 py-1.5 text-sm font-medium transition ${
+                          currency === c
+                            ? "bg-indigo-600 text-white"
+                            : "text-slate-600 hover:bg-slate-100"
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
               <div>
                   <label
@@ -105,26 +145,26 @@ export default function Home() {
                   </label>
                   <div className="mt-1.5 flex items-center rounded-lg border border-slate-300 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
                     <span className="pl-3 text-sm font-medium text-slate-400">
-                      S/
+                      {symbol}
                     </span>
                     <input
                       id="amount"
                       type="number"
                       inputMode="decimal"
-                      min="3"
+                      min={minAmount}
                       step="0.10"
-                      value={amountSoles}
-                      onChange={(e) => setAmountSoles(e.target.value)}
+                      value={amountValue}
+                      onChange={(e) => setAmountValue(e.target.value)}
                       onBlur={() => {
-                        const n = parseFloat(amountSoles);
-                        if (!isNaN(n) && n > 0) setAmountSoles(n.toFixed(2));
+                        const n = parseFloat(amountValue);
+                        if (!isNaN(n) && n > 0) setAmountValue(n.toFixed(2));
                       }}
                       className="w-full rounded-lg border-0 bg-transparent px-2 py-2.5 text-lg font-semibold text-slate-900 focus:outline-none focus:ring-0"
                     />
                   </div>
                   <p className="mt-1.5 text-xs text-slate-400">
                     {priceCents > 0
-                      ? `Equivale a ${priceCents} céntimos. Mínimo S/ 3.00.`
+                      ? `Equivale a ${priceCents} céntimos. Mínimo ${symbol} ${minAmount.toFixed(2)}.`
                       : "Ingresa un monto válido."}
                   </p>
                 </div>
@@ -132,11 +172,11 @@ export default function Home() {
                 <div className="rounded-xl bg-slate-50 p-4 text-sm">
                   <div className="flex justify-between text-slate-500">
                     <span>Subtotal</span>
-                    <span>S/ {amountSoles}</span>
+                    <span>{symbol} {amountValue}</span>
                   </div>
                   <div className="mt-2 flex justify-between border-t border-slate-200 pt-2 text-base font-semibold text-slate-900">
                     <span>Total</span>
-                    <span>S/ {amountSoles}</span>
+                    <span>{symbol} {amountValue}</span>
                   </div>
                 </div>
 
@@ -151,7 +191,7 @@ export default function Home() {
   );
 }
 
-function solesToCents(value: string): number {
+function amountToCents(value: string): number {
   const n = parseFloat(value);
   if (isNaN(n) || n <= 0) return 0;
   return Math.round(n * 100);

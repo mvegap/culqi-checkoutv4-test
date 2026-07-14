@@ -9,6 +9,7 @@ const EXPIRATION_SECONDS = 3 * 24 * 60 * 60;
 
 interface OrderBody {
   amount?: number; // céntimos
+  currency?: "PEN" | "USD";
   description?: string;
   firstName?: string;
   lastName?: string;
@@ -28,6 +29,7 @@ export async function POST(req: Request) {
 
   const {
     amount,
+    currency,
     description,
     firstName,
     lastName,
@@ -36,6 +38,7 @@ export async function POST(req: Request) {
     secretKey,
     mode,
   } = body;
+  const currencyCode = currency === "USD" ? "USD" : "PEN";
 
   if (!amount || !email || !firstName || !lastName || !phoneNumber || !secretKey) {
     return NextResponse.json(
@@ -57,6 +60,16 @@ export async function POST(req: Request) {
     );
   }
 
+  if (currencyCode !== "PEN") {
+    return NextResponse.json(
+      {
+        message:
+          "Las órdenes (PagoEfectivo, agente, banca móvil) solo están disponibles en soles (PEN). Selecciona PEN para usar estos métodos, o paga con tarjeta en USD.",
+      },
+      { status: 400 }
+    );
+  }
+
   if (amount < MIN_ORDER_CENTS) {
     return NextResponse.json(
       { message: "El monto mínimo para una orden (PagoEfectivo) es S/ 3.00." },
@@ -66,7 +79,7 @@ export async function POST(req: Request) {
 
   const payload = {
     amount,
-    currency_code: "PEN",
+    currency_code: currencyCode,
     description: (description ?? "Compra demo").slice(0, 80),
     order_number: `ord-${Date.now()}`,
     client_details: {

@@ -6,6 +6,7 @@ interface ChargeBody {
   tokenId?: string;
   email?: string;
   amount?: number; // céntimos
+  currency?: "PEN" | "USD";
   description?: string;
   secretKey?: string; // sk_test_ o sk_live_, provista por el cliente
   mode?: "test" | "live";
@@ -19,7 +20,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "JSON inválido." }, { status: 400 });
   }
 
-  const { tokenId, email, amount, description, secretKey, mode } = body;
+  const { tokenId, email, amount, currency, description, secretKey, mode } =
+    body;
+  const currencyCode = currency === "USD" ? "USD" : "PEN";
 
   if (!tokenId || !email || !amount || !secretKey) {
     return NextResponse.json(
@@ -40,7 +43,7 @@ export async function POST(req: Request) {
 
   const payload = {
     amount,
-    currency_code: "PEN",
+    currency_code: currencyCode,
     email,
     source_id: tokenId,
     capture: true,

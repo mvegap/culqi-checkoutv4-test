@@ -12,10 +12,25 @@ type Status =
   | { kind: "order"; orderId: string; paymentCode?: string }
   | { kind: "error"; message: string };
 
+export type Currency = "PEN" | "USD";
+
+export const CURRENCY_SYMBOL: Record<Currency, string> = {
+  PEN: "S/",
+  USD: "US$",
+};
+
+// Monto mínimo por moneda: PEN habilita PagoEfectivo (S/ 3.00);
+// USD solo admite tarjeta, con un mínimo razonable de US$ 1.00.
+export const MIN_AMOUNT_CENTS: Record<Currency, number> = {
+  PEN: 300,
+  USD: 100,
+};
+
 interface Props {
   product: {
     title: string;
-    priceCents: number; // céntimos PEN
+    priceCents: number; // céntimos en la moneda seleccionada
+    currency: Currency;
     description: string;
   };
 }
@@ -113,6 +128,7 @@ export default function CulqiCheckout({ product }: Props) {
           tokenId,
           email,
           amount: product.priceCents,
+          currency: product.currency,
           description: product.title,
           secretKey: active.secretKey,
           mode,
@@ -154,11 +170,14 @@ export default function CulqiCheckout({ product }: Props) {
       });
       return;
     }
-    if (!product.priceCents || product.priceCents < 300) {
+    const minAmount = MIN_AMOUNT_CENTS[product.currency];
+    if (!product.priceCents || product.priceCents < minAmount) {
       setStatus({
         kind: "error",
         message:
-          "El monto mínimo es S/ 3.00 (necesario para habilitar PagoEfectivo).",
+          product.currency === "PEN"
+            ? "El monto mínimo es S/ 3.00 (necesario para habilitar PagoEfectivo)."
+            : `El monto mínimo en USD es ${CURRENCY_SYMBOL.USD} 1.00.`,
       });
       return;
     }
@@ -176,43 +195,49 @@ export default function CulqiCheckout({ product }: Props) {
       setScriptReady(true);
     }
 
-    // Creamos la orden de pago: habilita PagoEfectivo, agente y banca móvil
-    setStatus({ kind: "loading", message: "Creando orden de pago..." });
-    let orderId: string;
-    try {
-      const res = await fetch("/api/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: product.priceCents,
-          description: product.title,
-          firstName,
-          lastName,
-          email,
-          phoneNumber: phone,
-          secretKey: active.secretKey,
-          mode,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
+    // Las órdenes (PagoEfectivo, agente, banca móvil) solo operan en soles;
+    // en USD solo se ofrece pago con tarjeta, sin necesidad de crear orden.
+    const isPen = product.currency === "PEN";
+    let orderId: string | undefined;
+
+    if (isPen) {
+      setStatus({ kind: "loading", message: "Creando orden de pago..." });
+      try {
+        const res = await fetch("/api/order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: product.priceCents,
+            currency: product.currency,
+            description: product.title,
+            firstName,
+            lastName,
+            email,
+            phoneNumber: phone,
+            secretKey: active.secretKey,
+            mode,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setStatus({
+            kind: "error",
+            message:
+              data?.error?.user_message ||
+              data?.error?.merchant_message ||
+              data?.message ||
+              "No se pudo crear la orden de pago.",
+          });
+          return;
+        }
+        orderId = data.id;
+      } catch (err) {
         setStatus({
           kind: "error",
-          message:
-            data?.error?.user_message ||
-            data?.error?.merchant_message ||
-            data?.message ||
-            "No se pudo crear la orden de pago.",
+          message: err instanceof Error ? err.message : "Error de red inesperado.",
         });
         return;
       }
-      orderId = data.id;
-    } catch (err) {
-      setStatus({
-        kind: "error",
-        message: err instanceof Error ? err.message : "Error de red inesperado.",
-      });
-      return;
     }
 
     const CulqiCheckoutCtor = window.CulqiCheckout;
@@ -226,21 +251,26 @@ export default function CulqiCheckout({ product }: Props) {
 
     setStatus({ kind: "idle" });
 
-    const paymentMethods = {
-      tarjeta: true,
-      yape: true,
-      billetera: true,
-      bancaMovil: true,
-      agente: true,
-      cuotealo: true,
-    };
+    // Yape, billetera, banca móvil, agente y cuotéalo solo están disponibles en PEN
+    const paymentMethods = isPen
+      ? {
+          tarjeta: true,
+          yape: true,
+          billetera: true,
+          bancaMovil: true,
+          agente: true,
+          cuotealo: true,
+        }
+      : {
+          tarjeta: true,
+        };
 
     const config: CulqiCheckoutConfig = {
       settings: {
         title: MERCHANT_NAME,
-        currency: "PEN",
+        currency: product.currency,
         amount: product.priceCents,
-        order: orderId,
+        ...(orderId ? { order: orderId } : {}),
       },
       client: { email },
       options: {
@@ -285,7 +315,7 @@ export default function CulqiCheckout({ product }: Props) {
   const busy = status.kind === "loading";
   const buttonLabel = busy
     ? "Procesando..."
-    : `Pagar S/ ${(product.priceCents / 100).toFixed(2)}`;
+    : `Pagar ${CURRENCY_SYMBOL[product.currency]} ${(product.priceCents / 100).toFixed(2)}`;
   const buttonColor =
     mode === "live"
       ? "bg-rose-600 hover:bg-rose-700"
@@ -347,6 +377,13 @@ export default function CulqiCheckout({ product }: Props) {
           disabled={busy}
         />
       </label>
+
+      {product.currency === "USD" && (
+        <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          En USD solo está disponible el pago con tarjeta. Cambia a PEN para
+          habilitar Yape, banca móvil, agente y PagoEfectivo.
+        </p>
+      )}
 
       <button
         type="button"
